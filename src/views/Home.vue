@@ -200,10 +200,9 @@ export default {
         }
       })
         .then(response => {
-          console.log(response.data);
           vm.data_tw = response.data;
         })
-        .catch(err => console.log(err));
+        .catch(err => console.error(err));
       axios({
         url:
           "https://coronavirus-monitor.p.rapidapi.com/coronavirus/worldstat.php",
@@ -214,10 +213,9 @@ export default {
         }
       })
         .then(response => {
-          console.log(response.data);
           vm.data_world = response.data;
         })
-        .catch(err => console.log(err));
+        .catch(err => console.error(err));
     }
   },
   components: {},
