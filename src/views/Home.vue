@@ -27,6 +27,10 @@
           .Card.Neumorphism 
             h4.color 尚未康復
             h3 {{data_tw.latest_stat_by_country[0].active_cases}}
+          .Card.Neumorphism 
+            h4.color 死亡人數 / 致死率
+            h3 {{data_tw.latest_stat_by_country[0].total_deaths}} / 
+              span.orange {{deathRate(data_tw.latest_stat_by_country[0].total_deaths,data_tw.latest_stat_by_country[0].total_cases)}}
         .hub
           h1.title World
           h4.title 尚未痊癒 
@@ -42,6 +46,10 @@
           .Card.Neumorphism 
             h4.color 尚未康復
             h3 {{unRecovered}}
+          .Card.Neumorphism 
+            h4.color 死亡人數 / 致死率
+            h3 {{data_world.total_deaths}} / 
+              span.orange {{deathRate(data_world.total_deaths,data_world.total_cases)}}
       .btn.Neumorphism(@click="clickBtn") close
 </template>
 
@@ -90,6 +98,11 @@ export default {
   methods: {
     clickBtn() {
       this.open = !this.open;
+    },
+    deathRate(death, total) {
+      return (
+        parseInt(death.replace(",", "")) / parseInt(total.replace(",", ""))
+      ).toFixed(2);
     },
     createIcon() {
       // eslint-disable-next-line no-unused-vars
