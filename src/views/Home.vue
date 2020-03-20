@@ -12,29 +12,28 @@
       .btn.Neumorphism(@click="clickBtn") 數據報告
     .container(v-if="!open")
       .hubGroup
-        .hub
-          h1.title {{data_tw.country}} 
+        .hub(v-for="item in all_data")
+          h1.title {{item.country}} 
           h4.title 尚未痊癒
-            span.orange  {{(parseInt(data_tw.latest_stat_by_country[0].active_cases.replace(",",''))/parseInt(data_tw.latest_stat_by_country[0].total_cases.replace(",",""))).toFixed(2)}}
+            span.orange  {{(parseInt(item.latest_stat_by_country[0].active_cases.replace(",",''))/parseInt(item.latest_stat_by_country[0].total_cases.replace(",",""))).toFixed(3) * 100}}%
           h4.update {{twdate}}
-
           .Card.Neumorphism 
             h4.color 總感染人數
-            h3 {{data_tw.latest_stat_by_country[0].total_cases}}
+            h3 {{item.latest_stat_by_country[0].total_cases}}
           .Card.Neumorphism 
             h4.color 今日感染
-            h3 {{data_tw.latest_stat_by_country[0].new_cases}}
+            h3 {{item.latest_stat_by_country[0].new_cases == '' ? '0' : item.latest_stat_by_country[0].new_cases}}
           .Card.Neumorphism 
             h4.color 尚未康復
-            h3 {{data_tw.latest_stat_by_country[0].active_cases}}
+            h3 {{item.latest_stat_by_country[0].active_cases}}
           .Card.Neumorphism 
             h4.color 死亡人數 / 致死率
-            h3 {{data_tw.latest_stat_by_country[0].total_deaths}} / 
-              span.orange {{deathRate(data_tw.latest_stat_by_country[0].total_deaths,data_tw.latest_stat_by_country[0].total_cases)}}
+            h3 {{item.latest_stat_by_country[0].total_deaths}} / 
+              span.orange {{deathRate(item.latest_stat_by_country[0].total_deaths,item.latest_stat_by_country[0].total_cases)}}
         .hub
           h1.title World
           h4.title 尚未痊癒 
-            span.orange {{(parseInt(unRecovered.replace(",",''))/parseInt(data_world.total_cases.replace(",",""))).toFixed(2)}}
+            span.orange {{(parseInt(unRecovered.replace(",",''))/parseInt(data_world.total_cases.replace(",",""))).toFixed(2)* 100}}%
           h4.update {{worlddate}}
 
           .Card.Neumorphism 
@@ -72,6 +71,7 @@ export default {
       open: true,
       data_tw: {},
       data_world: {},
+      all_data: [],
       timer: null
     };
   },
@@ -201,11 +201,10 @@ export default {
       // animate next frame
       requestAnimationFrame(this.animate);
     },
-    async getData() {
+    async getData(country) {
       var vm = this;
       axios({
-        url:
-          "https://coronavirus-monitor.p.rapidapi.com/coronavirus/latest_stat_by_country.php?country=Taiwan",
+        url: `https://coronavirus-monitor.p.rapidapi.com/coronavirus/latest_stat_by_country.php?country=${country}`,
         method: "GET",
         headers: {
           "x-rapidapi-host": "coronavirus-monitor.p.rapidapi.com",
@@ -214,8 +213,12 @@ export default {
       })
         .then(response => {
           vm.data_tw = response.data;
+          vm.all_data.push(response.data);
         })
         .catch(err => console.error(err));
+    },
+    getWorld() {
+      var vm = this;
       axios({
         url:
           "https://coronavirus-monitor.p.rapidapi.com/coronavirus/worldstat.php",
@@ -233,7 +236,12 @@ export default {
   },
   components: {},
   mounted() {
-    this.getData();
+    this.getData("Taiwan");
+    this.getData("Korea");
+    this.getData("China");
+    this.getData("Italy");
+    this.getData("Iran");
+    this.getWorld();
     this.createIcon();
   }
 };
@@ -242,9 +250,15 @@ export default {
 <style lang="scss" scoped>
 $blue: #1f7eeb;
 $orange: #ffae2f;
+html,
+body {
+  background: #1f1e23;
+}
+
 .home {
   background: #1f1e23;
-  height: 100vh;
+  min-height: 100vh;
+  overflow: hidden;
   width: 100vw;
   margin: 0;
   display: flex;
@@ -258,6 +272,9 @@ $orange: #ffae2f;
     margin: 0;
     margin-bottom: 4px;
     text-align: left;
+  }
+  h1 {
+    font-size: 1.5rem;
   }
   .title {
     color: rgba(255, 255, 255, 0.698);
@@ -291,7 +308,8 @@ canvas {
 .btn {
   color: rgba(255, 255, 255, 0.418);
   padding: 15px 60px;
-  margin: 5rem;
+  margin: 2rem;
+  max-width: 500px;
   cursor: pointer;
 }
 .Neumorphism {
@@ -322,10 +340,34 @@ canvas {
   color: $orange;
 }
 
-.hubGroup {
-  display: flex;
-  .hub {
-    margin: 20px;
+@media screen and (max-width: 600px) {
+  .hubGroup {
+    flex-direction: column;
   }
+}
+
+.hubGroup {
+  margin: 0px 50px;
+  box-sizing: border-box;
+  display: flex;
+  width: 100vw;
+  overflow-x: scroll;
+  justify-content: space-between;
+  .hub {
+    box-sizing: border-box;
+    flex: 1;
+    margin: 30px 40px;
+    min-width: min-content;
+  }
+}
+.hubGroup::-webkit-scrollbar {
+  display: none;
+}
+.container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-direction: column;
+  position: relative;
 }
 </style>
