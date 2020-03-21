@@ -12,24 +12,6 @@
       .btn.Neumorphism(@click="clickBtn") 數據報告
     .container(v-if="!open")
       .hubGroup
-        .hub(v-for="item in all_data")
-          h1.title {{item.country}} 
-          h4.title 尚未痊癒
-            span.orange  {{(parseInt(item.latest_stat_by_country[0].active_cases.replace(",",''))/parseInt(item.latest_stat_by_country[0].total_cases.replace(",",""))).toFixed(3) * 100}}%
-          h4.update {{twdate}}
-          .Card.Neumorphism 
-            h4.color 總感染人數
-            h3 {{item.latest_stat_by_country[0].total_cases}}
-          .Card.Neumorphism 
-            h4.color 今日感染
-            h3 {{item.latest_stat_by_country[0].new_cases == '' ? '0' : item.latest_stat_by_country[0].new_cases}}
-          .Card.Neumorphism 
-            h4.color 尚未康復
-            h3 {{item.latest_stat_by_country[0].active_cases}}
-          .Card.Neumorphism 
-            h4.color 死亡人數 / 致死率
-            h3 {{item.latest_stat_by_country[0].total_deaths}} / 
-              span.orange {{deathRate(item.latest_stat_by_country[0].total_deaths,item.latest_stat_by_country[0].total_cases)}}
         .hub
           h1.title World
           h4.title 尚未痊癒 
@@ -48,7 +30,25 @@
           .Card.Neumorphism 
             h4.color 死亡人數 / 致死率
             h3 {{data_world.total_deaths}} / 
-              span.orange {{deathRate(data_world.total_deaths,data_world.total_cases)}}
+              span.orange {{deathRate(data_world.total_deaths,data_world.total_cases)}}%
+        .hub(v-for="item in all_data")
+          h1.title {{item.country_name}} 
+          h4.title 尚未痊癒
+            span.orange  {{unReovered(item)}}%
+          h4.update {{twdate(updateAt)}}
+          .Card.Neumorphism 
+            h4.color 總感染人數
+            h3 {{item.cases}}
+          .Card.Neumorphism 
+            h4.color 今日感染
+            h3 {{item.new_cases == '' ? 'no data' : item.new_cases}}
+          .Card.Neumorphism 
+            h4.color 尚未康復
+            h3 {{item.active_cases}}
+          .Card.Neumorphism 
+            h4.color 死亡人數 / 致死率
+            h3 {{item.deaths}} / 
+              span.orange {{deathRate(item.deaths,item.cases)}}%
       .btn.Neumorphism(@click="clickBtn") close
 </template>
 
@@ -72,15 +72,11 @@ export default {
       data_tw: {},
       data_world: {},
       all_data: [],
+      updateAt: "",
       timer: null
     };
   },
   computed: {
-    twdate() {
-      return dayjs(this.data_tw.latest_stat_by_country[0].record_date).format(
-        "MM/DD hh:mm:ss"
-      );
-    },
     worlddate() {
       return dayjs(this.data_world.statistic_taken_at).format("MM/DD hh:mm:ss");
     },
@@ -96,13 +92,28 @@ export default {
     }
   },
   methods: {
+    twdate(item) {
+      return dayjs(item).format("MM/DD hh:mm:ss");
+    },
     clickBtn() {
       this.open = !this.open;
     },
     deathRate(death, total) {
-      return (
-        parseInt(death.replace(",", "")) / parseInt(total.replace(",", ""))
+      let data = (
+        parseFloat(
+          parseInt(death.replace(",", "")) / parseInt(total.replace(",", ""))
+        ) * 100
       ).toFixed(2);
+      return data;
+    },
+    unReovered(item) {
+      let data = (
+        parseFloat(
+          parseInt(item.active_cases.replace(",", "")) /
+            parseInt(item.cases.replace(",", ""))
+        ) * 100
+      ).toFixed(2);
+      return data;
     },
     createIcon() {
       // eslint-disable-next-line no-unused-vars
@@ -213,7 +224,33 @@ export default {
       })
         .then(response => {
           vm.data_tw = response.data;
-          vm.all_data.push(response.data);
+        })
+        .catch(err => console.error(err));
+    },
+    getAll() {
+      var vm = this;
+      axios({
+        url:
+          "https://coronavirus-monitor.p.rapidapi.com/coronavirus/cases_by_country.php",
+        method: "GET",
+        headers: {
+          "x-rapidapi-host": "coronavirus-monitor.p.rapidapi.com",
+          "x-rapidapi-key": "6eae5bc294msh01480cf2f278451p1dc032jsn1252f0bd2c13"
+        }
+      })
+        .then(response => {
+          console.log(response.data);
+          vm.updateAt = response.data.statistic_taken_at;
+
+          vm.all_data.push(...response.data.countries_stat);
+          var result = vm.all_data
+            .map(function(item) {
+              return item.country_name;
+            })
+            .indexOf("Taiwan");
+          let tempTaiwan = vm.all_data[result];
+          vm.all_data.splice(result, 1);
+          vm.all_data.unshift(tempTaiwan);
         })
         .catch(err => console.error(err));
     },
@@ -236,12 +273,14 @@ export default {
   },
   components: {},
   mounted() {
-    this.getData("Taiwan");
-    this.getData("Korea");
-    this.getData("China");
-    this.getData("Italy");
-    this.getData("Iran");
+    // this.getData("Taiwan");
+    // this.getData("S. Korea");
+    // this.getData("China");
+    // this.getData("Italy");
+    // this.getData("Iran");
+    // this.getData("France");
     this.getWorld();
+    this.getAll();
     this.createIcon();
   }
 };
